@@ -5,6 +5,40 @@ import { ComfySettingsDialog } from "./ui/settings.js";
 
 export const ComfyDialog = _ComfyDialog;
 
+async function getHandle() 
+{
+	// set some options, like the suggested file name and the file type.
+	const options = {
+	  suggestedName: 'workflow.json',
+	  types: [
+	    {
+		 description: 'Workflow Files',
+		 accept: {
+		   // 'text/plain': ['.json'],
+		   "application/JSON": ['.json'],
+		 },
+	    },
+	  ],
+	};
+   
+	// prompt the user for the location to save the file.
+	const handle = await window.showSaveFilePicker(options);
+   
+	return handle
+}
+  
+async function saveFile(handle, text) 
+{
+	// creates a writable, used to write data to the file.
+	const writable = await handle.createWritable();
+   
+	// write a string to the writable.
+	await writable.write(text);
+   
+	// close the writable and save all changes to disk. this will prompt the user for write permission to the file, if it's the first time.
+	await writable.close();
+}
+   
 /**
  * 
  * @param { string } tag HTML Element Tag and optional classes e.g. div.class1.class2
@@ -528,29 +562,36 @@ export class ComfyUI {
 				id: "comfy-save-button",
 				textContent: "Save",
 				onclick: () => {
-					let filename = "workflow.json";
-					if (promptFilename.value) {
-						filename = prompt("Save workflow as:", filename);
-						if (!filename) return;
-						if (!filename.toLowerCase().endsWith(".json")) {
-							filename += ".json";
-						}
-					}
+					// let filename = "workflow.json";
+					// if (promptFilename.value) {
+					// 	filename = prompt("Save workflow as:", filename);
+					// 	if (!filename) return;
+					// 	if (!filename.toLowerCase().endsWith(".json")) {
+					// 		filename += ".json";
+					// 	}
+					// }
 					app.graphToPrompt().then(p=>{
 						const json = JSON.stringify(p.workflow, null, 2); // convert the data to a JSON string
-						const blob = new Blob([json], {type: "application/json"});
-						const url = URL.createObjectURL(blob);
-						const a = $el("a", {
-							href: url,
-							download: filename,
-							style: {display: "none"},
-							parent: document.body,
-						});
-						a.click();
-						setTimeout(function () {
-							a.remove();
-							window.URL.revokeObjectURL(url);
-						}, 0);
+
+						// calls the function to let the user pick a location.
+						getHandle()
+							.then(handle => {
+								return saveFile(handle, json)
+							})
+	
+						// const blob = new Blob([json], {type: "application/json"});
+						// const url = URL.createObjectURL(blob);
+						// const a = $el("a", {
+						// 	href: url,
+						// 	download: filename,
+						// 	style: {display: "none"},
+						// 	parent: document.body,
+						// });
+						// a.click();						
+						// setTimeout(function () {
+						// 	a.remove();
+						// 	window.URL.revokeObjectURL(url);
+						// }, 0);
 					});
 				},
 			}),
